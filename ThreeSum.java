@@ -3,14 +3,18 @@ import java.util.Arrays;
 
 public class ThreeSum {
     public static void main(String[] args) {
-        In in = new In("E:\\JavaPJ\\DSA\\algs4-data\\8Kints.txt");
+        In in = new In("E:\\JavaPJ\\DSA\\algs4-data\\8ints.txt");
         int[] a = in.readAllInts();
         Arrays.sort(a);
-        for (int i = 0; i < a.length; ++i){
-            for (int j = i + 1; j < a.length; ++j) {
-                int pos = Arrays.binarySearch(a, -a[i]-a[j]);
-                if (pos > j  && pos < a.length && a[i] + a[j] + a[pos] == 0) {
-                    StdOut.println(a[i] + " " + a[j] + " " + a[pos]);
+        int N = a.length;
+        for (int i = 0; i < N; ++i){
+            int run = N-1;
+            for (int j = i + 1; j < N; ++j) {
+                while (run > j && a[i] + a[j] + a[run] > 0) {
+                    --run;
+                }
+                if (run > j && a[i] + a[j] + a[run] == 0) {
+                    StdOut.println(a[i] + " " + a[j] + " " + a[run]);
                 }
             }
         }
