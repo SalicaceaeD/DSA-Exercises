@@ -1,50 +1,76 @@
-import edu.princeton.cs.algs4.*;
+import edu.princeton.cs.algs4.WeightedQuickUnionUF;
 
 public class Percolation {
-    private int N; // size of the grid
-    private WeightedQuickUnionUF opened;
-    private WeightedQuickUnionUF connected;
-    private int top;
-    private int bot;
+    private static final int ROOT = 0;
+    private int n; // size of the grid
+    private WeightedQuickUnionUF wTop;
+    private WeightedQuickUnionUF wBot;
+    private boolean[] stat;
+    private int count;
+    private boolean percolated;
     /**
      * creates n-by-n grid, with all sites initially blocked.
      * @param n size of the grid
      */
     public Percolation(int n) {
         if (n <= 0) throw new IllegalArgumentException();
-        this.N = n;
-        opened = new WeightedQuickUnionUF(n*n+1);
-        connected = new WeightedQuickUnionUF(n*n+2);
-        this.top = 0;
-        this.bot = n*n+1;
+        this.n = n;
+        wTop = new WeightedQuickUnionUF(n*n+1);
+        wBot = new WeightedQuickUnionUF(n*n+1);
+        stat = new boolean[n * n + 1];
+        count = 0;
+        percolated = false;
     }
 
+    /**
+     * check if row index and col index are relevent.
+     * @param row row index
+     * @param col col index
+     * @return true if relevant, else false
+     */
+    private boolean relevant(int row, int col) {
+        return row >= 1 && row <= n && col >= 1 && col <= n;
+    }
+
+    /**
+     * map from 2D to 1D indices.
+     * @param row row index
+     * @param col col index
+     * @return index in 1D map
+     */
+    private int to1D(int row, int col) {
+        return (row - 1) * n + col;
+    }
+
+    private void connect(int id1, int id2) {
+        wTop.union(id1, id2);
+        wBot.union(id1, id2);
+    }
     /**
      * opens the site (row, col) if it is not open already.
      * @param row row index
      * @param col column index
      */
     public void open(int row, int col) {
-        if (row < 1 || row > N || col < 1 || col > N)
+        if (!relevant(row, col))
             throw new IllegalArgumentException();
         if (isOpen(row, col))
             return;
-        int id = (row - 1) * N + col;
-        opened.union(top, id);
-        if (row == 1) connected.union(top, id);
-        if (row == N) connected.union(bot, id);
-        int[] X = {-1, 0, 0, 1};
-        int[] Y = {0, -1, 1, 0};
-        for (int i = 0; i < 4; ++i) {
-            if (row + X[i] < 1 || row + X[i] > N ||
-                col + Y[i] < 1 || col + Y[i] > N) {
-                continue;
-            }
-            if (isOpen(row + X[i], col + Y[i])) {
-                int neighbour = (row + X[i] - 1) * N + (col + Y[i]);
-                connected.union(id, neighbour);
-            }
-        }
+        int id = to1D(row, col);
+        ++count;
+        stat[id] = true;
+        if (row == n) wBot.union(ROOT, id);
+        if (row == 1) wTop.union(ROOT, id);
+        if (relevant(row + 1, col) && isOpen(row + 1, col))
+            connect(id, to1D(row + 1, col));
+        if (relevant(row - 1, col) && isOpen(row - 1, col))
+            connect(id, to1D(row - 1, col));
+        if (relevant(row, col + 1) && isOpen(row, col + 1))
+            connect(id, to1D(row, col + 1));
+        if (relevant(row, col - 1) && isOpen(row, col - 1))
+            connect(id, to1D(row, col - 1));
+        if (wTop.find(id) == wTop.find(ROOT) && wBot.find(id) == wBot.find(ROOT))
+            percolated = true;
     }
 
     /**
@@ -54,10 +80,9 @@ public class Percolation {
      * @return true if the site is open, else false
      */
     public boolean isOpen(int row, int col) {
-        if (row < 1 || row > N || col < 1 || col > N)
+        if (!relevant(row, col))
             throw new IllegalArgumentException();
-        int id = (row - 1) * N + col;
-        return opened.find(top) == opened.find(id);
+        return stat[to1D(row, col)];
     }
 
     /**
@@ -67,10 +92,9 @@ public class Percolation {
      * @return true if the site is full, else false
      */
     public boolean isFull(int row, int col) {
-        if (row < 1 || row > N || col < 1 || col > N)
+        if (!relevant(row, col))
             throw new IllegalArgumentException();
-        int id = (row - 1) * N + col;
-        return connected.find(top) == connected.find(id);
+        return wTop.find(ROOT) == wTop.find(to1D(row, col));
     }
 
     /**
@@ -78,7 +102,7 @@ public class Percolation {
      * @return the number of open sites
      */
     public int numberOfOpenSites() {
-        return N * N + 1 - opened.count();
+        return count;
     }
 
     /**
@@ -86,9 +110,11 @@ public class Percolation {
      * @return true if the system percolates, else false
      */
     public boolean percolates() {
-        return connected.find(top) == connected.find(bot);
+        return percolated;
     }
 
     // test client (optional)
-    public static void main(String[] args) {}
+    public static void main(String[] args) {
+
+    }
 }
